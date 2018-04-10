@@ -3,6 +3,7 @@ project(hermes_lidar)
 
 set(CMAKE_CXX_STANDARD 11)
 
+set(CMAKE_CXX_FLAGS "-pthread")
 file(GLOB SOURCES "src/*.cpp" "src/*.h" "include/*.h" "include/*.hpp")
 include_directories(lib/)
 add_executable(hermes_lidar ${SOURCES})
