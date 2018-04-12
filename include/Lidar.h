@@ -12,10 +12,13 @@
 
 using namespace rp::standalone::rplidar;
 
+typedef std::vector<rplidar_response_measurement_node_t> MeasuresVector;
+
 class Lidar {
 
+
     RPlidarDriver *driver;
-    std::vector<rplidar_response_measurement_node_t> node;
+    MeasuresVector measures;
 
 public:
     Lidar();
@@ -36,8 +39,13 @@ public:
     /*
      * Scans
      */
+    bool startMotor(uint16_t pwm);
+    bool stopMotor();
 
+    bool startScan();
+    bool stopScan();
 
+    const MeasuresVector& getScanData();
 };
 
 

@@ -13,7 +13,14 @@ int main()
         lidar.printDeviceInfo();
         lidar.printDeviceHealth();
 
+        lidar.startMotor(500);
+        lidar.startScan();
 
+        MeasuresVector measures = lidar.getScanData();        //Recupere les données;
+
+
+
+        lidar.stopMotor();
         lidar.disconnect();
     }
 

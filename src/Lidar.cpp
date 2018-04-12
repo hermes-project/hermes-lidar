@@ -5,7 +5,7 @@
 #include "Lidar.h"
 
 Lidar::Lidar() : driver(RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT)){
-    node.reserve(8192);
+    measures.reserve(8192);
 }
 
 Lidar::~Lidar() {
@@ -59,5 +59,47 @@ void Lidar::printDeviceInfo() {
 }
 
 
+bool Lidar::startMotor(uint16_t pwm) {
+    if(!IS_OK(driver->setMotorPWM(pwm))){
+        std::cout<<"Erreur RPLidar : Echec startMotor"<<std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool Lidar::stopMotor() {
+    if(!IS_OK(driver->stopMotor())){
+        std::cout<<"Erreur RPLidar : Echec stopMotor"<<std::endl;
+        return false;
+    }
+    return true;
+}
 
 
+bool Lidar::startScan() {
+    if(!IS_OK(driver->startScan(false, true))){
+        std::cout<<"Erreur RPLidar : Echec startScan"<<std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool Lidar::stopScan() {
+    if(!IS_OK(driver->startScan(false, true))){
+        std::cout<<"Erreur RPLidar : Echec startScan"<<std::endl;
+        return false;
+    }
+    return true;
+}
+
+const MeasuresVector &Lidar::getScanData() {
+    size_t count=8192;
+    u_result scan_status;
+    measures.clear();
+    measures.reserve(8192);
+    if(IS_OK(driver->grabScanData(measures.data(),count))){
+        driver->ascendScanData(measures.data(),count);
+    }
+
+    return measures;
+}
