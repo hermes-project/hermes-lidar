@@ -7,18 +7,19 @@
 
 #include <iostream>
 #include <vector>
+#include <memory>
+#include <chrono>
 
+#include "ScanData.h"
 #include "RPLidar/sdk/include/rplidar.h"
 
 using namespace rp::standalone::rplidar;
 
-typedef std::vector<rplidar_response_measurement_node_t> MeasuresVector;
+
+typedef std::vector<rplidar_response_measurement_node_t> RawMeasuresVector;
 
 class Lidar {
-
-
     RPlidarDriver *driver;
-    MeasuresVector measures;
 
 public:
     Lidar();
@@ -42,10 +43,10 @@ public:
     bool startMotor(uint16_t pwm);
     bool stopMotor();
 
-    bool startScan();
-    bool stopScan();
+    bool startScans();
+    bool stopScans();
 
-    const MeasuresVector& getScanData();
+    const std::shared_ptr<ScanData> getScanData();
 };
 
 

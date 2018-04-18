@@ -5,7 +5,7 @@ int main()
 {
     Lidar lidar;
 
-    if(lidar.connect("/dev/ttyUSB0", 115200)) {               //Connection au LiDAR sur le port serie /dev/ttyUSB0 a 115200 bauds
+    if(lidar.connect("/dev/ttyUSB0", 115200)) {
         //  GESTION DU STATUS DU LIDAR
         u_result operation_status;
         std::cout<<"RPLIDAR: lidar connecte"<<std::endl;
@@ -14,15 +14,15 @@ int main()
         lidar.printDeviceHealth();
 
         lidar.startMotor(500);
-        lidar.startScan();
+        lidar.startScans();
 
-        MeasuresVector measures = lidar.getScanData();        //Recupere les données;
+        std::shared_ptr<ScanData> measures = lidar.getScanData();        //Rec
 
-
-
+        lidar.stopScans();
         lidar.stopMotor();
         lidar.disconnect();
-    }
 
-    return 0;
+        return EXIT_SUCCESS;
+    }
+    return EXIT_FAILURE;
 }

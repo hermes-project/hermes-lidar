@@ -4,19 +4,17 @@
 
 #include "Lidar.h"
 
-Lidar::Lidar() : driver(RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT)){
-    measures.reserve(8192);
-}
+Lidar::Lidar() : driver(RPlidarDriver::CreateDriver(DRIVER_TYPE_SERIALPORT)){}
 
-Lidar::~Lidar() {
-    //Retirer ça pour mettre sur la UDOO
-    //RPlidarDriver::DisposeDriver(driver);
-}
+//TODO: Decommenter ça sur la UDOO/Raspi
+//Lidar::~Lidar() {
+//    RPlidarDriver::DisposeDriver(driver);
+//}
 
 bool Lidar::connect(const char *path, int baudrate) {
     bool status=driver->connect("/dev/ttyUSB0", 115200) == RESULT_OK;
     if(!status){
-        std::cout<<"Erreur RPLidar: Echec grabScanData"<<std::endl;
+        std::cout<<"Erreur RPLidar: connect"<<std::endl;
     }
     return status;
 }
@@ -35,7 +33,7 @@ void Lidar::printDeviceHealth() {
         std::cout << "Codes de status: 0=OK, 1=WARNING, 2=ERREUR" << std::endl;
     }
     else{
-        std::cout<<"Erreur RPLidar : Echec printDeviceHealth"<<std::endl;
+        std::cout<<"Erreur RPLidar : printDeviceHealth"<<std::endl;
     }
 }
 
@@ -54,14 +52,14 @@ void Lidar::printDeviceInfo() {
                   << (unsigned int) device_info.firmware_version << std::endl;
     }
     else{
-        std::cout<<"Erreur RPLidar : Echec printDeviceInfo"<<std::endl;
+        std::cout<<"Erreur RPLidar : printDeviceInfo"<<std::endl;
     }
 }
 
 
 bool Lidar::startMotor(uint16_t pwm) {
     if(!IS_OK(driver->setMotorPWM(pwm))){
-        std::cout<<"Erreur RPLidar : Echec startMotor"<<std::endl;
+        std::cout<<"Erreur RPLidar : startMotor"<<std::endl;
         return false;
     }
     return true;
@@ -69,37 +67,54 @@ bool Lidar::startMotor(uint16_t pwm) {
 
 bool Lidar::stopMotor() {
     if(!IS_OK(driver->stopMotor())){
-        std::cout<<"Erreur RPLidar : Echec stopMotor"<<std::endl;
+        std::cout<<"Erreur RPLidar : stopMotor"<<std::endl;
         return false;
     }
     return true;
 }
 
 
-bool Lidar::startScan() {
+bool Lidar::startScans() {
     if(!IS_OK(driver->startScan(false, true))){
-        std::cout<<"Erreur RPLidar : Echec startScan"<<std::endl;
+        std::cout<<"Erreur RPLidar : startScans"<<std::endl;
         return false;
     }
     return true;
 }
 
-bool Lidar::stopScan() {
+bool Lidar::stopScans() {
     if(!IS_OK(driver->startScan(false, true))){
-        std::cout<<"Erreur RPLidar : Echec startScan"<<std::endl;
+        std::cout<<"Erreur RPLidar : startScans"<<std::endl;
         return false;
     }
     return true;
 }
 
-const MeasuresVector &Lidar::getScanData() {
+const std::shared_ptr<ScanData> Lidar::getScanData() {
+    RawMeasuresVector rawMeasureVector;
+    rawMeasureVector.reserve(8192);
     size_t count=8192;
-    u_result scan_status;
-    measures.clear();
-    measures.reserve(8192);
-    if(IS_OK(driver->grabScanData(measures.data(),count))){
-        driver->ascendScanData(measures.data(),count);
-    }
+    if(IS_OK(driver->grabScanData(rawMeasureVector.data(),count))){
+        driver->ascendScanData(rawMeasureVector.data(),count);
 
-    return measures;
+        //Preparation of the measures with format {new_turn, quality, angle distance}
+        std::vector<measure> measures;
+        for(auto rawMeasure : rawMeasureVector){
+            measures.emplace_back((rawMeasure.sync_quality & RPLIDAR_RESP_MEASUREMENT_SYNCBIT) != 0,
+                      rawMeasure.sync_quality>>RPLIDAR_RESP_MEASUREMENT_QUALITY_SHIFT,
+                      (rawMeasure.angle_q6_checkbit>>RPLIDAR_RESP_MEASUREMENT_ANGLE_SHIFT)/64.0f,
+                      rawMeasure.distance_q2/4.0f);
+        }
+
+        //Timestamp
+        using namespace std::chrono;
+        long timestamp=time_point_cast<milliseconds>(high_resolution_clock::now()).time_since_epoch().count();
+
+        return std::make_shared<ScanData>(measures,timestamp);
+
+    }
+    else{
+        std::cout<<"Erreur RPLidar : getScanData\nReturning old values"<<std::endl;
+        return std::make_shared<ScanData>();
+    }
 }
